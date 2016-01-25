@@ -4,8 +4,27 @@
   "description": "",
   "main": "lib/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha",
+    "test:debug": "mocha --debug-brk"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@panosoft/ramda-utils": "^0.2.5",
+    "bunyan": "^1.5.1",
+    "co": "^4.6.0",
+    "commander": "^2.9.0",
+    "is_js": "^0.7.6",
+    "mime-types": "^2.1.9",
+    "parse-headers": "^2.0.1",
+    "ramda": "^0.19.1",
+    "read-pkg": "^1.1.0",
+    "uuid": "^2.0.1"
+  },
+  "devDependencies": {
+    "chai": "^3.4.1",
+    "chai-as-promised": "^5.2.0",
+    "concat-stream": "^1.5.1",
+    "mocha": "^2.3.4"
+  }
 }
