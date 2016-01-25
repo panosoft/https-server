@@ -30,7 +30,9 @@ const HttpsServer = require('@panosoft/https-server');
 
 const packageFilename = '/path/to/top-level/pacakge.json';
 const routes = {
-  '/': { GET: (request, response, log) => response.end('Hello World') }
+  '/': {
+    GET: (request, response, log) => response.end('Hello World')
+  }
 };
 
 HttpsServer.cli(packageFilename, routes);
@@ -49,7 +51,9 @@ const options = {
   logger: bunyan.createLogger({name: 'server'})
 };
 const routes = {
-  '/': { GET: (request, response, log) => response.end('Hello World') }
+  '/': {
+    GET: (request, response, log) => response.end('Hello World')
+  }
 };
 const server = HttpsServer.create(options, routes);
 
@@ -134,9 +138,9 @@ Also, the following process events are also handled gracefully and appropriately
 When run as a command the following interface is available:
 
 ```sh
-Usage: server-name --key <path> --cert <path> [options]
+Usage: command-name --key <path> --cert <path> [options]
 
-<Description from package.json>
+Description from package.json ...
 
 Options:
 
