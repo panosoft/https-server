@@ -9,9 +9,9 @@ const serialize = require('../lib/serialize');
 const Server = require('../lib/server');
 const url = require('url');
 
-const ca = fs.readFileSync(path.resolve(__dirname, 'credentials/rootCA.pem'));
-const key = fs.readFileSync(path.resolve(__dirname, 'credentials/privateKey.pem'));
-const cert = fs.readFileSync(path.resolve(__dirname, 'credentials/certificate.pem'));
+const ca = fs.readFileSync(path.resolve(__dirname, 'credentials/ca.crt'));
+const key = fs.readFileSync(path.resolve(__dirname, 'credentials/server.key'));
+const cert = fs.readFileSync(path.resolve(__dirname, 'credentials/server.crt'));
 const parse = url.parse;
 const request = co.wrap(function * (method, url, data) {
   const response = yield new Promise((resolve, reject) =>
