@@ -25,6 +25,7 @@
     "chai": "^3.4.1",
     "chai-as-promised": "^5.2.0",
     "concat-stream": "^1.5.1",
-    "mocha": "^2.3.4"
+    "mocha": "^2.3.4",
+    "parse-json": "^2.2.0"
   }
 }
