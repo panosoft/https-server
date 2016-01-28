@@ -115,6 +115,42 @@ const routes = {
 };
 ```
 
+# Error Responses
+
+## Path Not Found
+
+When a requested path is not defined in `Routes`, the following error response is sent to the requester:
+
+- Status Code: `404`
+- Headers:
+  - `Request-Id` - {String} The unique id assigned to the associated request.
+  - `Content-Type` - `'application/json'`
+- Body:
+  - `error` - `'${pathname} not found'`
+
+## Method Not Defined
+
+When an undefined method for a path defined in `Routes` is requested, the following error response is sent to the requester:
+
+- Status Code: `405`
+- Headers:
+  - `Request-Id` - {String} The unique id assigned to the associated request.
+  - `Content-Type` - `'application/json'`
+  - `Allow` - {String} A comma separated list of valid methods for the requested path.
+- Body:
+  - `error` - `'${method} not allowed for ${pathname}'`
+
+## Internal Server error
+
+When an error is thrown or a returned promise is rejected by a route handler, the following error response is sent to the requester:
+
+- Status Code: `500`
+- Headers:
+  - `Request-Id` - {String} The unique id assigned to the associated request.
+  - `Content-Type` - `'application/json'`
+- Body:
+  - `error` - {String} The associated error message.
+
 # API
 
 ## cli ( packageFilename , routes )
