@@ -16,7 +16,6 @@ const url = require('url');
 
 const pkg = readPkg.sync(`${__dirname}/fixtures/package.json`);
 const bin = `${__dirname}/fixtures/bin.js`;
-const noPackageFilenameBin = `${__dirname}/fixtures/noPackageFilenameBin.js`;
 const ca = fs.readFileSync(path.resolve(__dirname, 'credentials/ca.crt'));
 const key = `${__dirname}/credentials/server.key`;
 const cert = `${__dirname}/credentials/server.crt`;
@@ -59,18 +58,11 @@ describe('CLI', () => {
     it('exists', () =>
       expect(cli).to.be.an('function')
     );
+    it('require packageFilename', () =>
+      expect(cli).to.throw(TypeError, 'packageFilename must be defined.')
+    );
   });
   describe('used in executable file', () => {
-    it('require packageFilename', co.wrap(function * () {
-      const child = cp.spawn(noPackageFilenameBin, []);
-      const stdout = yield new Promise(resolve => child.stdout.pipe(concat(resolve)));
-      const code = yield new Promise(resolve => child.on('close', resolve));
-      const records = parseRecords(stdout);
-      const errorRecord = records[0];
-      expect(errorRecord.level).to.equal(bunyan.FATAL);
-      expect(errorRecord.error.message).to.equal('packageFilename must be defined.');
-      expect(code).to.equal(1);
-    }));
     it('display help', co.wrap(function * () {
       const child = cp.spawn(bin, ['--help']);
       const stdout = yield new Promise(resolve => child.stdout.pipe(concat(resolve)));
