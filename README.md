@@ -258,3 +258,87 @@ A thin wrapper around Node's [server.getConnections](https://nodejs.org/api/net.
 A thin wrapper around Node's [server.close](https://nodejs.org/api/https.html#https_server_close_callback) method that returns a `Promise` instead of taking a callback.
 
 Also, this method differs from Node's [server.close](https://nodejs.org/api/https.html#https_server_close_callback) in that it will not return an error if it is called while the server is not listening.
+
+## test.startServer ( filename [, options] )
+
+A helper function that makes it simple to test cli servers that use the `cli` method.
+
+This function spawns the cli server in a child process. It returns a `Promise` that is fullfilled with a reference to the server process once the server has started successfully. If an error is encountered, the promise will be rejected with the error.
+
+__Arguments__
+
+- `filename` - {String} File path to an executable file that calls the `cli` method.
+
+- `options` - {Object} An object of server options.
+
+    - `port` - {Number} The port to start the server on.
+
+    - `interface` - {String} The interface to start the server on.
+
+__Example__
+
+Assuming we have and executable file at `path/to/executable.js` with the following contents:
+
+```js
+#! /usr/bin/env node
+
+const HttpsServer = require('@panosoft/https-server');
+const path = require('path');
+
+const packageFilename = path.resolve(__dirname, '../package.json');
+const routes = { '/': { 'POST': (req, res, log) => res.end('root') }};
+HttpsServer.cli(packageFilename, routes);
+```
+
+Then we can use the `test.startServer` method to run this executable file and know when the server has started:
+
+```js
+const co = require('co');
+const HttpsServer = require('@panosoft/https-server');
+
+co(function * () {
+  const filename = `path/to/executable.js`;
+  const server = yield HttpsServer.test.startServer(filename);
+  // make requests ...
+  server.kill();
+})
+```
+
+## test.request ( pathname , method , headers , data )
+
+A helper function that makes it simple to make requests to a test instance of https-server being run with `test.startServer`. This method handles making requests with the self-signed TLS certificate used by `test.startServer`.
+
+This method makes a request that will recognize the the self-signed TLS certificate used by `test.startServer` as valid. It returns a `Promise` that is fulfilled with the completed response that includes the response body at `response.body`.
+
+__Arguments__
+
+- `pathname` - {String} The pathname to request.
+
+- `method` - {String} The HTTP method to use. Defaults to `GET`.
+
+- `headers` - {Object} The headers to include with the request. Defaults to `{}`.
+
+- `data` - {\*} The data to send along with the request. Defaults to `null`.
+
+__Example__
+
+Continuing the `test.startServer` example above ...
+
+```js
+const co = require('co');
+const HttpsServer = require('@panosoft/https-server');
+
+co(function * () {
+  const filename = `path/to/executable.js`;
+  const server = yield HttpsServer.test.startServer(filename);
+
+  const pathname = '/';
+  const method = 'POST';
+  const headers = { 'Content-Type': 'application/json' };
+  const data = JSON.stringify({ a: 1 });
+  const response = yield request( pathname, method, headers, data);
+  console.log(response.body.toString('utf8')); //=> 'root'
+
+  server.kill();
+})
+```

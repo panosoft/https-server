@@ -3,51 +3,27 @@ const cli = require('../lib/cli');
 const co = require('co');
 const concat = require('concat-stream');
 const cp = require('child_process');
-const expect = require('chai')
-  .use(require('chai-as-promised'))
-  .expect;
+const expect = require('chai').expect;
 const fs = require('fs');
 const https = require('https');
 const parseJson = require('parse-json');
 const path = require('path');
 const R = require('ramda');
 const readPkg = require('read-pkg');
+const testCommon = require('../lib/test');
 const url = require('url');
+
+const startServer = testCommon.startServer;
+const request = testCommon.request;
 
 const pkg = readPkg.sync(`${__dirname}/fixtures/package.json`);
 const bin = `${__dirname}/fixtures/bin.js`;
 const ca = fs.readFileSync(path.resolve(__dirname, 'credentials/ca.crt'));
 const key = `${__dirname}/credentials/server.key`;
-const cert = `${__dirname}/credentials/server.crt`;
 
 const split = R.compose(R.reject(R.isEmpty), R.split('\n'));
 const parseRecords = stdout => R.map(parseJson, split(stdout.toString('utf8')));
 const parseUrl = url.parse;
-const serverStarted = child => new Promise((resolve, reject) => {
-  child.stderr.setEncoding('utf8');
-  child.stderr.pipe(concat(data => data ? reject(data) : null));
-  const isInfo = record => record.level === bunyan.INFO;
-  const isStarted = record => record.msg === `Server started.`;
-  const check = data => {
-    var records;
-    try {
-      records = parseRecords(data);
-    }
-    catch (error) {
-      console.error(error);
-      console.log(data.toString('utf8'));
-    }
-    if (!R.all(isInfo, records)) {
-      child.stdout.removeListener('data', check);
-      reject(records);
-    }
-    else if (R.any(isStarted, records)) {
-      child.stdout.removeListener('data', check);
-      resolve();
-    }
-  };
-  child.stdout.on('data', check);
-});
 const get = (url) => new Promise((resolve, reject) =>
   https.get(R.merge(parseUrl(url), { ca }), resolve)
     .on('error', reject)
@@ -94,29 +70,23 @@ describe('CLI', () => {
       expect(code).to.equal(1);
     }));
     it('handle SIGINT', co.wrap(function * () {
-      const child = cp.spawn(bin, ['--key', key, '--cert', cert]);
-      yield serverStarted(child);
-      child.kill('SIGINT');
-      const code = yield new Promise(resolve => child.on('close', resolve));
+      const server = yield startServer(bin);
+      server.kill('SIGINT');
+      const code = yield new Promise(resolve => server.on('close', resolve));
       expect(code).to.equal(0);
     }));
     it('handle SIGTERM', co.wrap(function * () {
-      const child = cp.spawn(bin, ['--key', key, '--cert', cert]);
-      yield serverStarted(child);
-      child.kill('SIGTERM');
-      const code = yield new Promise(resolve => child.on('close', resolve));
+      const server = yield startServer(bin);
+      server.kill('SIGTERM');
+      const code = yield new Promise(resolve => server.on('close', resolve));
       expect(code).to.equal(0);
     }));
     it('listen on default port and host', co.wrap(function * () {
-      const host = `localhost`;
-      const port = 8443;
       const path = '/';
-      const url = `https://${host}:${port}${path}`;
-      const child = cp.spawn(bin, ['--key', key, '--cert', cert]);
-      yield serverStarted(child);
-      const response = yield get(url);
-      child.kill();
-      const code = yield new Promise(resolve => child.on('close', resolve));
+      const server = yield startServer(bin);
+      const response = yield request(path);
+      server.kill();
+      const code = yield new Promise(resolve => server.on('close', resolve));
       expect(response.statusCode).to.equal(200);
       expect(code).to.equal(0);
     }));
@@ -125,11 +95,10 @@ describe('CLI', () => {
       const port = 8888;
       const path = '/';
       const url = `https://${host}:${port}${path}`;
-      const child = cp.spawn(bin, ['--key', key, '--cert', cert, '--port', port]);
-      yield serverStarted(child);
+      const server = yield startServer(bin, { port });
       const response = yield get(url);
-      child.kill();
-      const code = yield new Promise(resolve => child.on('close', resolve));
+      server.kill();
+      const code = yield new Promise(resolve => server.on('close', resolve));
       expect(response.statusCode).to.equal(200);
       expect(code).to.equal(0);
     }));
@@ -138,13 +107,12 @@ describe('CLI', () => {
       const port = 8443;
       const path = '/';
       const url = `https://${host}:${port}${path}`;
-      const child = cp.spawn(bin, ['--key', key, '--cert', cert, '--port', port, '--interface', host]);
-      yield serverStarted(child);
+      const server = yield startServer(bin, { port, interface: host });
       try {
         yield get(url);
       }
       catch (error) {
-        child.kill();
+        server.kill();
         expect(error.message).to.contain(`Hostname/IP doesn't match certificate`);
       }
     }));
@@ -153,11 +121,10 @@ describe('CLI', () => {
       const port = 8443;
       const path = '/uncaughtException';
       const url = `https://${host}:${port}${path}`;
-      const child = cp.spawn(bin, ['--key', key, '--cert', cert]);
-      yield serverStarted(child);
+      const server = yield startServer(bin);
       yield get(url);
       // exception should kill server
-      const code = yield new Promise(resolve => child.on('close', resolve));
+      const code = yield new Promise(resolve => server.on('close', resolve));
       // log?
       expect(code).to.equal(1);
     }));
@@ -166,11 +133,10 @@ describe('CLI', () => {
       const port = 8443;
       const path = '/unhandledRejection';
       const url = `https://${host}:${port}${path}`;
-      const child = cp.spawn(bin, ['--key', key, '--cert', cert]);
-      yield serverStarted(child);
+      const server = yield startServer(bin);
       yield get(url);
       // rejection should kill server
-      const code = yield new Promise(resolve => child.on('close', resolve));
+      const code = yield new Promise(resolve => server.on('close', resolve));
       // log?
       expect(code).to.equal(1);
     }));
